@@ -1,5 +1,9 @@
 const passport = require('passport');
 const localStrategy = require('passport-local').Strategy;
+
+const JWTstrategy = require('passport-jwt').Strategy;
+const ExtractJWT = require('passport-jwt').ExtractJwt;
+
 const UserModel = require('../models/user');
 
 // Create Register and Sign in APIs and on successful signin use Token based authentication
@@ -43,6 +47,22 @@ passport.use(
                     return done(null, false, { message: 'Wrong Password' });
                 }
                 return done(null, user, { message: 'Logged in Successfully' });
+            } catch (error) {
+                done(error);
+            }
+        }
+    )
+);
+
+passport.use(
+    new JWTstrategy(
+        {
+            secretOrKey: 'TOP_SECRET',
+            jwtFromRequest: ExtractJWT.fromUrlQueryParameter('secret_token')
+        },
+        async (token, done) => {
+            try {
+                return done(null, token.user);
             } catch (error) {
                 done(error);
             }
