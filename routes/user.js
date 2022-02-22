@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const keys = require("../config/keys");
 const passport = require('passport');
 const bcrypt = require("bcryptjs");
 const jwt = require('jsonwebtoken');
@@ -43,36 +44,54 @@ router.post('/signup',(req,res)=>{
     });
 });
 
-router.post('/signup', passport.authenticate('signup', {session:false}),
-    async(req,res,next)=>{
-        res.json({message:'Signup Successfully', user:req.user});
+router.post('/login', (req,res)=>{
+    // Form validation
+    const {errors, isValid} = validateLoginInput(req.body);
+
+    //check validation
+    if(!isValid){
+        return res.status(400).json(errors);
     }
-);
 
-router.post('/login', 
-    async(req,res,next)=>{
-        passport.authenticate('login', async(err,user,info)=>{
-            try{
-                if(err || !user){
-                    const error = new Error('An error occured.');
-                    return next(error);
-                }
-                req.login(user, {session:false},
-                    async(error)=>{
-                        if(error) return next(error);
+    const email = req.body.email;
+    const password = req.body.password;
 
-                        const body = { _id:user._id,email:user.email};
-                        const token = jwt.sign({user:body},'TOP_SECRET');
+    // find user by email
+    User.findOne({email})
+    .then(user=>{
+        //check if user exists
+        if(!user){
+            return res.status(404).json({ emailnotfound: "Email not found" });
+        }
 
-                        return res.json({token});
-                    }
-                );
-            } catch(error){
-                return next(error);
+        //check password
+        bcrypt.compare(password, user.password)
+        .then(isMatch => {
+            if(isMatch){
+                // User matched
+                // create JWT Payload
+                const payload = {
+                    id: user.id,
+                    name: user.name
+                };
+
+                //sign token
+                jwt.sign(payload,keys.secretOrKey,
+                    {
+                        expiresIn: 31556926 // 1 year in seconds
+                    },
+                    (err, token)=>{
+                        res.json({
+                            success: true,
+                            token: "Bearer " + token
+                        });
+                    });
+            } else {
+                return res.status(400).json({passwordincorrect: "Password incorrect"});
             }
-        })(req,res,next);
-    }
-);
+        });
+    });
+});
 
 
 module.exports = router;
