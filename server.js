@@ -20,7 +20,7 @@ mongoose
 app.use(passport.initialize());
 
 // passport config
-require("./config/passport")(passport);
+require("./middleware/passport")(passport);
 
 // routes
 app.use("/todo", todo);
