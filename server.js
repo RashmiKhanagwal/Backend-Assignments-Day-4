@@ -3,6 +3,7 @@ const app = express();
 const mongoose = require("mongoose");
 const passport = require("passport");
 const users = require("./routes/user");
+const todo = require("./routes/todo");
 
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
@@ -22,6 +23,7 @@ app.use(passport.initialize());
 require("./config/passport")(passport);
 
 // routes
-app.use("/api/users", users);
+app.use("/todo", todo);
+app.use("/users", users);
 
 app.listen(3000, () => {console.log("server connected")});
